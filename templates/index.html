@@ -22,11 +22,11 @@
         <a href="#reports"><span>⇩</span> Reports & export</a>
       </nav>
       <div class="sidebar-bottom">
-        <div class="privacy-note"><span class="status-dot"></span><div><b>Your workspace</b><small>Private session</small></div></div>
-        <p class="sidebar-caption">Files stay in this app session. AI requests send aggregate statistics only.</p>
+        <div class="privacy-note"><span class="status-dot"></span><div><b>{% if public_demo %}Public demo{% else %}Your workspace{% endif %}</b><small>{% if public_demo %}Temporary browser session{% else %}Private session{% endif %}</small></div></div>
+        <p class="sidebar-caption">{% if public_demo %}Use sample data only. Do not upload confidential or personal information.{% else %}Files stay in this app session. AI requests send aggregate statistics only.{% endif %}</p>
         <form method="post" action="{{ url_for('logout') }}">
           <input type="hidden" name="csrf_token" value="{{ token }}">
-          <button class="signout" type="submit">↪ &nbsp; Sign out</button>
+          <button class="signout" type="submit">↪ &nbsp; {{ "Reset demo session" if public_demo else "Sign out" }}</button>
         </form>
       </div>
     </aside>
@@ -59,6 +59,9 @@
           <div class="dataset-chip" id="dataset-name">No dataset loaded</div>
         </section>
 
+        {% if public_demo %}
+        <div class="alert error" role="note">Public demo: anyone with this link can use the app. Upload sample, non-sensitive data only. Files are held temporarily in server memory and may be cleared when the service restarts.</div>
+        {% endif %}
         <div id="notice" class="notice" role="status" hidden></div>
 
         <section id="upload-panel" class="upload-panel">
@@ -71,9 +74,11 @@
             <strong>Drag and drop your file here</strong>
             <span>or <span class="browse">browse files</span></span>
             <small>CSV, Excel (.xlsx), JSON, SQL or TXT · Up to 20 MB</small>
-            <input id="file-input" type="file" accept=".csv,.xlsx,.json,.sql,.txt">
+            <input id="file-input" type="file" accept="{% if public_demo %}.csv,.xlsx,.json,.txt{% else %}.csv,.xlsx,.json,.sql,.txt{% endif %}">
           </label>
+          {% if not public_demo %}
           <p class="sql-note">SQL files run as read-only SELECT queries using your configured PostgreSQL connection.</p>
+          {% endif %}
         </section>
 
         <div id="workspace" hidden>
