@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ token }}">
+  <title>Clearview Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#overview"><span class="brand-mark">C</span><span>Clearview<small>ANALYTICS</small></span></a>
+      <p class="nav-label">WORKSPACE</p>
+      <nav class="side-nav">
+        <a class="active" href="#overview"><span>◫</span> Overview</a>
+        <a href="#analysis"><span>▤</span> Dataset analysis</a>
+        <a href="#cleaning"><span>⌁</span> Data cleaning</a>
+        <a href="#visualization"><span>▥</span> Visualization</a>
+        <a href="#ai"><span>✦</span> AI insights</a>
+        <a href="#reports"><span>⇩</span> Reports & export</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="privacy-note"><span class="status-dot"></span><div><b>Your workspace</b><small>Private session</small></div></div>
+        <p class="sidebar-caption">Files stay in this app session. AI requests send aggregate statistics only.</p>
+        <form method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ token }}">
+          <button class="signout" type="submit">↪ &nbsp; Sign out</button>
+        </form>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">C</span> Clearview Analytics</div>
+        <div class="crumb">Workspace <span>/</span> <b>Data overview</b></div>
+        <div class="top-actions">
+          <button id="theme-toggle" class="icon-button" aria-label="Toggle dark mode" title="Toggle dark mode">☾</button>
+          <div class="avatar">A</div>
+        </div>
+      </header>
+      <nav class="mobile-nav" aria-label="Workspace sections">
+        <a href="#overview">Overview</a>
+        <a href="#analysis">Analysis</a>
+        <a href="#cleaning">Cleaning</a>
+        <a href="#visualization">Charts</a>
+        <a href="#ai">AI insights</a>
+        <a href="#reports">Exports</a>
+      </nav>
+
+      <div class="page-wrap">
+        <section class="page-heading" id="overview">
+          <div>
+            <p class="eyebrow">YOUR DATA, MADE CLEAR</p>
+            <h1>Data overview</h1>
+            <p class="muted">Upload, clean, explore, and tell the story behind your data.</p>
+          </div>
+          <div class="dataset-chip" id="dataset-name">No dataset loaded</div>
+        </section>
+
+        <div id="notice" class="notice" role="status" hidden></div>
+
+        <section id="upload-panel" class="upload-panel">
+          <div class="upload-intro">
+            <div class="upload-icon">↑</div>
+            <div><h2>Start with a dataset</h2><p>Drop a file here or browse from your computer.</p></div>
+          </div>
+          <label id="drop-zone" class="drop-zone" for="file-input">
+            <span class="upload-cloud">⇧</span>
+            <strong>Drag and drop your file here</strong>
+            <span>or <span class="browse">browse files</span></span>
+            <small>CSV, Excel (.xlsx), JSON, SQL or TXT · Up to 20 MB</small>
+            <input id="file-input" type="file" accept=".csv,.xlsx,.json,.sql,.txt">
+          </label>
+          <p class="sql-note">SQL files run as read-only SELECT queries using your configured PostgreSQL connection.</p>
+        </section>
+
+        <div id="workspace" hidden>
+          <section class="kpi-grid" aria-label="Dataset summary">
+            <article class="kpi-card"><div class="kpi-icon blue">▦</div><span class="kpi-label">Total rows</span><strong id="kpi-rows">—</strong><small>Records in dataset</small></article>
+            <article class="kpi-card"><div class="kpi-icon violet">▤</div><span class="kpi-label">Columns</span><strong id="kpi-columns">—</strong><small>Fields available</small></article>
+            <article class="kpi-card"><div class="kpi-icon amber">◌</div><span class="kpi-label">Missing values</span><strong id="kpi-missing">—</strong><small id="missing-note">Across all columns</small></article>
+            <article class="kpi-card"><div class="kpi-icon rose">⧉</div><span class="kpi-label">Duplicate rows</span><strong id="kpi-duplicates">—</strong><small>Exact row matches</small></article>
+          </section>
+
+          <section class="panel" id="analysis">
+            <div class="panel-heading">
+              <div><p class="eyebrow">DATA ANALYSIS</p><h2>Statistical summary</h2><p class="muted">Descriptive statistics for numeric columns and a per-column missing-data report.</p></div>
+            </div>
+            <div class="table-wrap stats-wrap">
+              <table id="stats-table"><thead></thead><tbody></tbody></table>
+            </div>
+            <h3 class="subsection-title">Missing data report</h3>
+            <div class="table-wrap stats-wrap">
+              <table id="missing-table"><thead></thead><tbody></tbody></table>
+            </div>
+          </section>
+
+          <section class="panel filter-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">EXPLORE</p><h2>Find the records you need</h2></div>
+              <span id="filtered-count" class="muted small"></span>
+            </div>
+            <div class="filter-toolbar">
+              <label class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search any column, customer, product..."></label>
+              <select id="search-column" aria-label="Choose a column to search"><option value="*">All columns</option></select>
+              <button id="clear-filters" class="button secondary">Clear filters</button>
+            </div>
+            <div id="filter-controls" class="filter-controls"></div>
+            <div class="table-wrap">
+              <table id="data-table"><thead></thead><tbody></tbody></table>
+            </div>
+            <p class="table-foot">Showing up to 250 matching rows.</p>
+          </section>
+
+          <section class="panel" id="cleaning">
+            <div class="panel-heading">
+              <div><p class="eyebrow">DATA QUALITY</p><h2>Clean your dataset</h2><p class="muted">Review detected issues, then choose which changes to apply.</p></div>
+              <button class="button primary" data-clean="safe_clean">Clean safe issues</button>
+            </div>
+            <div id="quality-summary" class="quality-grid"></div>
+            <div class="clean-tools">
+              <div class="tool-card">
+                <h3>Missing values</h3>
+                <div class="inline-controls">
+                  <select id="null-strategy" aria-label="Fill strategy"><option value="mean">Mean</option><option value="median">Median</option><option value="mode">Mode</option><option value="custom">Custom value</option></select>
+                  <select id="null-column" aria-label="Column for missing values"><option value="">All columns</option></select>
+                </div>
+                <input id="custom-value" class="custom-value" placeholder="Value to use" hidden>
+                <div class="button-row"><button class="button secondary" data-clean="fill_missing">Fill missing</button><button class="button secondary" data-clean="drop_missing_rows">Delete rows</button><button class="button secondary" data-clean="drop_missing_columns">Delete empty columns</button></div>
+              </div>
+              <div class="tool-card">
+                <h3>Types & outliers</h3>
+                <div class="inline-controls">
+                  <select id="type-column" aria-label="Column to convert"></select>
+                  <select id="target-type" aria-label="New data type"><option value="integer">Integer</option><option value="float">Float</option><option value="date">Date</option><option value="boolean">Boolean</option><option value="string">String</option></select>
+                </div>
+                <div class="button-row"><button class="button secondary" data-clean="convert_type">Convert type</button><button class="button secondary" data-clean="drop_column">Delete selected column</button></div>
+                <button class="button secondary auto-convert" data-clean="auto_convert_types">Auto-convert detected types</button>
+                <div class="inline-controls outlier-controls">
+                  <select id="outlier-column" aria-label="Numeric outlier column"></select>
+                  <select id="outlier-method" aria-label="Outlier method"><option>IQR</option><option>Z Score</option></select>
+                </div>
+                <button class="button secondary" data-clean="remove_outliers">Remove detected outliers</button>
+              </div>
+            </div>
+            <div class="quick-clean">
+              <span>Quick fixes</span>
+              <button class="text-button" data-clean="strip_spaces">Remove extra spaces</button>
+              <button class="text-button" data-clean="remove_duplicates">Remove duplicates</button>
+              <button class="text-button" data-clean="remove_blank_rows">Remove blank rows</button>
+              <button class="text-button" data-clean="remove_blank_columns">Remove blank columns</button>
+              <button class="text-button" data-clean="fix_column_names">Fix column names</button>
+            </div>
+          </section>
+
+          <section class="panel" id="visualization">
+            <div class="panel-heading">
+              <div><p class="eyebrow">VISUAL EXPLORATION</p><h2>Build a visualization</h2></div>
+              <button class="button secondary export-chart">Download PNG</button>
+            </div>
+            <div class="chart-controls">
+              <label>Chart type<select id="chart-type">
+                <option value="bar">Bar chart</option><option value="pie">Pie chart</option><option value="histogram">Histogram</option><option value="line">Line chart</option><option value="scatter">Scatter plot</option><option value="area">Area chart</option><option value="box">Box plot</option><option value="heatmap">Heatmap</option><option value="bubble">Bubble chart</option><option value="treemap">Treemap</option><option value="funnel">Funnel chart</option><option value="waterfall">Waterfall chart</option><option value="donut">Donut chart</option>
+              </select></label>
+              <label>X / category<select id="chart-x"></select></label>
+              <label>Y / value<select id="chart-y"></select></label>
+              <label>Bubble size<select id="chart-size"></select></label>
+              <label>Color<input id="chart-color" type="color" value="#4f72f5"></label>
+              <button id="build-chart" class="button primary">Update chart</button>
+            </div>
+            <div id="chart-empty" class="chart-empty">Upload data and choose fields to create your chart.</div>
+            <div id="chart" class="chart" hidden></div>
+            <div class="kpi-strip" id="chart-kpis"></div>
+          </section>
+
+          <section class="panel ai-panel" id="ai">
+            <div class="panel-heading">
+              <div><p class="eyebrow">BUSINESS ANALYSIS</p><h2>Turn numbers into a narrative</h2><p class="muted">Stories and rule-based insights work locally without an API key. Configure OpenAI optionally for AI-generated insights.</p></div>
+              <span class="ai-badge">✦ LOCAL + OPENAI</span>
+            </div>
+            <div class="ai-actions">
+              <button class="ai-action" data-ai="story"><span class="ai-action-icon">✎</span><span><b>Business story</b><small>Four-stage analysis and next steps</small></span><span class="arrow">→</span></button>
+              <button class="ai-action" data-ai="insights"><span class="ai-action-icon">✧</span><span><b>Insights & recommendations</b><small>Trends, risks, opportunities, forecast</small></span><span class="arrow">→</span></button>
+            </div>
+            <div id="ai-result" class="ai-result" hidden></div>
+          </section>
+
+          <section class="panel reports-panel" id="reports">
+            <div class="panel-heading"><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Reports & export</h2><p class="muted">Download your cleaned data or share a summary with your team.</p></div></div>
+            <div class="export-grid">
+              <button class="export-card" data-export="csv"><span class="export-icon green">CSV</span><span><b>Cleaned dataset</b><small>Comma-separated values</small></span><span class="arrow">↓</span></button>
+              <button class="export-card" data-export="excel"><span class="export-icon green">XLS</span><span><b>Excel workbook</b><small>Data and missing-value report</small></span><span class="arrow">↓</span></button>
+              <button class="export-card" data-export="pdf"><span class="export-icon red">PDF</span><span><b>PDF report</b><small>Dataset quality and statistics</small></span><span class="arrow">↓</span></button>
+              <button class="export-card" data-export="pptx"><span class="export-icon orange">PPT</span><span><b>PowerPoint report</b><small>Ready-to-present summary</small></span><span class="arrow">↓</span></button>
+              <button class="export-card" data-export="png"><span class="export-icon purple">PNG</span><span><b>Dashboard image</b><small>Download current chart</small></span><span class="arrow">↓</span></button>
+            </div>
+          </section>
+          <footer class="footer">Clearview Analytics <span>·</span> Make better decisions with better data.</footer>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

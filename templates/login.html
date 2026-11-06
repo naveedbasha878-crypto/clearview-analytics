@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in - Clearview Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="brand-mark">C</div>
+    <p class="eyebrow">CLEARVIEW ANALYTICS</p>
+    <h1>Welcome to Clearview Analytics</h1>
+    <p class="muted">Sign in to explore your data and discover clear business insights.</p>
+    {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('login') }}" class="login-form">
+      <input type="hidden" name="csrf_token" value="{{ token }}">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <label class="remember"><input type="checkbox" name="remember"> <span>Remember me on this device</span></label>
+      <button class="button primary full" type="submit">Sign in <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="login-foot">Credentials are configured by your administrator.</p>
+  </main>
+</body>
+</html>

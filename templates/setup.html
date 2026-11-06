@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up - Clearview Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="brand-mark">C</div>
+    <p class="eyebrow">CLEARVIEW ANALYTICS</p>
+    <h1>Set up your workspace</h1>
+    <p class="muted">Create your private sign-in. An OpenAI key is optional; local stories and insights work without one.</p>
+    {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('setup') }}" class="login-form">
+      <input type="hidden" name="csrf_token" value="{{ token }}">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required>
+      <label for="password">Password (at least 8 characters)</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="password-confirm">Confirm password</label>
+      <input id="password-confirm" name="password_confirm" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="openai-api-key">OpenAI API key (optional)</label>
+      <input id="openai-api-key" name="openai_api_key" type="password" autocomplete="off">
+      <button class="button primary full" type="submit">Save and continue <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="login-foot">Settings are stored in your Windows user profile, not in the app folder.</p>
+  </main>
+</body>
+</html>
