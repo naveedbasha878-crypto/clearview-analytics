@@ -27,7 +27,7 @@ user_config_dir = (
 load_dotenv(user_config_dir / ".env", override=False)
 
 hosted_mode = os.environ.get("CLEARVIEW_HOSTED_MODE", "").lower() == "true"
-public_demo_mode = hosted_mode and os.environ.get("CLEARVIEW_PUBLIC_DEMO", "").lower() == "true"
+public_demo_mode = hosted_mode
 if hosted_mode:
     required_hosted_settings = ("APP_USERNAME", "APP_PASSWORD", "FLASK_SECRET_KEY")
     missing_hosted_settings = [name for name in required_hosted_settings if not os.environ.get(name)]
