@@ -27,6 +27,7 @@ user_config_dir = (
 load_dotenv(user_config_dir / ".env", override=False)
 
 hosted_mode = os.environ.get("CLEARVIEW_HOSTED_MODE", "").lower() == "true"
+public_demo_mode = hosted_mode and os.environ.get("CLEARVIEW_PUBLIC_DEMO", "").lower() == "true"
 if hosted_mode:
     required_hosted_settings = ("APP_USERNAME", "APP_PASSWORD", "FLASK_SECRET_KEY")
     missing_hosted_settings = [name for name in required_hosted_settings if not os.environ.get(name)]
@@ -74,6 +75,8 @@ def protect_routes():
             return jsonify(error="Your session expired. Refresh the page and try again."), 400
 
     if request.endpoint in {"login", "setup", "static"}:
+        return None
+    if public_demo_mode:
         return None
     if not session.get("authenticated"):
         if request.path.startswith("/api/"):
@@ -277,6 +280,8 @@ def profile_payload(df):
 def read_uploaded_file(upload):
     filename = secure_filename(upload.filename or "dataset")
     extension = Path(filename).suffix.lower()
+    if public_demo_mode and extension == ".sql":
+        raise ValueError("SQL uploads are disabled in the public demo.")
     if extension not in ALLOWED_EXTENSIONS:
         raise ValueError("Supported file types are CSV, XLSX, JSON, SQL, and TXT.")
     raw = upload.read()
@@ -427,6 +432,8 @@ def response_error(error, status=400):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if public_demo_mode:
+        return redirect(url_for("home"))
     if not os.environ.get("APP_USERNAME") or not os.environ.get("APP_PASSWORD"):
         return redirect(url_for("setup"))
     if request.method == "POST":
@@ -456,6 +463,8 @@ def login():
 
 @app.route("/setup", methods=["GET", "POST"])
 def setup():
+    if public_demo_mode:
+        return redirect(url_for("home"))
     if os.environ.get("APP_USERNAME") and os.environ.get("APP_PASSWORD"):
         return redirect(url_for("login"))
     if request.method == "POST":
@@ -509,7 +518,7 @@ def logout():
 
 @app.get("/")
 def home():
-    return render_template("index.html", token=csrf_token())
+    return render_template("index.html", token=csrf_token(), public_demo=public_demo_mode)
 
 
 @app.get("/api/state")
@@ -1165,6 +1174,12 @@ def api_ai():
         frame = require_dataset()
     except ValueError as exc:
         return response_error(exc)
+    if public_demo_mode:
+        if mode == "story":
+            return jsonify({"text": local_business_story(frame), "source": "local"})
+        if mode == "insights":
+            return jsonify({"text": "Insights & recommendations (local, rule-based; public demo)\n\n" + local_business_story(frame), "source": "local"})
+        return response_error("Choose story or insights mode.", 400)
     if mode == "story" and not os.environ.get("OPENAI_API_KEY"):
         return jsonify({"text": local_business_story(frame), "source": "local"})
     if not os.environ.get("OPENAI_API_KEY"):
